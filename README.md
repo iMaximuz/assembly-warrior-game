@@ -1,2 +1,2 @@
 # assembly-warrior-game
-Multimedia Interactiva Game.
+Juego de Multimedia Interactiva.
