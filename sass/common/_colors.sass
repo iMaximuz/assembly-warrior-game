@@ -1,0 +1,13 @@
+
+$black: #000000
+$dark: #1b2331
+$darker: #121921
+$light: #ffffff
+$transparent-light: rgba(125, 125, 125, 0.5)
+
+
+=basic-radial($primary, $start, $secondary, $end)
+    background: #ffffff; /* Old browsers */
+    background: -moz-radial-gradient(center, ellipse cover, $primary $start, $secondary $end)
+    background: -webkit-radial-gradient(center, ellipse cover, $primary $start, $secondary $end)
+    background: radial-gradient(ellipse at center, $primary $start, $secondary $end)

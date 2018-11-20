@@ -1,0 +1,324 @@
+@font-face {
+  font-family: 'MuseoSans_500local';
+  src: url("MuseoSans_500-webfont.woff2") format("woff2"), url("MuseoSans_500-webfont.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+}
+
+*, ::after, ::before {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'MuseoSans_500local';
+  background: #ffffff;
+  /* Old browsers */
+  background: -moz-radial-gradient(center, ellipse cover, #1b2331 40%, #121921 150%);
+  background: -webkit-radial-gradient(center, ellipse cover, #1b2331 40%, #121921 150%);
+  background: radial-gradient(ellipse at center, #1b2331 40%, #121921 150%);
+  color: #ffffff;
+  background-repeat: no-repeat;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.wrapper {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  margin: auto;
+  text-align: center;
+}
+
+#title {
+  font-family: 'MuseoSans_500local';
+  vertical-align: middle;
+}
+
+#title > div {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 8em;
+  color: rgba(125, 125, 125, 0.5);
+}
+
+#title > h1 {
+  font-family: 'MuseoSans_500local';
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 4em;
+}
+
+.btn {
+  text-decoration: none;
+  border: none;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: none;
+  cursor: pointer;
+  padding: 15px 60px;
+  display: inline-block;
+  margin: 15px 30px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  outline: none;
+  position: relative;
+  -webkit-transition: all 0.3s;
+  -moz-transition: all 0.3s;
+  transition: all 0.3s;
+  z-index: 1;
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  -webkit-transition: all 0.3s;
+  -moz-transition: all 0.3s;
+  transition: all 0.3s;
+}
+
+.btn-1 {
+  border: 3px solid #fff;
+  color: #fff;
+}
+
+.btn-1d {
+  overflow: hidden;
+}
+
+.btn-1d::after {
+  width: 0;
+  height: 103%;
+  top: 50%;
+  left: 50%;
+  background: #fff;
+  opacity: 0;
+  -webkit-transform: translateX(-50%) translateY(-50%);
+  -moz-transform: translateX(-50%) translateY(-50%);
+  -ms-transform: translateX(-50%) translateY(-50%);
+  transform: translateX(-50%) translateY(-50%);
+}
+
+.btn-1d:hover, .btn-1d:active {
+  color: #1b2331;
+}
+
+.btn-1d:hover::after {
+  width: 90%;
+  opacity: 1;
+}
+
+.btn-1d:active::after {
+  width: 101%;
+  opacity: 1;
+}
+
+.btn-1e {
+  overflow: hidden;
+}
+
+.btn-1e::after {
+  width: 100%;
+  height: 0;
+  top: 50%;
+  left: 50%;
+  background: #fff;
+  opacity: 0;
+  -webkit-transform: translateX(-50%) translateY(-50%) rotate(45deg);
+  -moz-transform: translateX(-50%) translateY(-50%) rotate(45deg);
+  -ms-transform: translateX(-50%) translateY(-50%) rotate(45deg);
+  transform: translateX(-50%) translateY(-50%) rotate(45deg);
+}
+
+.btn-1e:hover, .btn-1e:active {
+  color: #1b2331;
+}
+
+.btn-1e:hover::after {
+  height: 260%;
+  opacity: 1;
+}
+
+.btn-1e:active::after {
+  height: 450%;
+  opacity: 1;
+}
+
+.btn-1f {
+  overflow: hidden;
+}
+
+.btn-1f::after {
+  width: 101%;
+  height: 0;
+  top: 50%;
+  left: 50%;
+  background: #fff;
+  opacity: 0;
+  -webkit-transform: translateX(-50%) translateY(-50%);
+  -moz-transform: translateX(-50%) translateY(-50%);
+  -ms-transform: translateX(-50%) translateY(-50%);
+  transform: translateX(-50%) translateY(-50%);
+}
+
+.btn-1f:hover, .btn-1f:active {
+  color: #1b2331;
+}
+
+.btn-1f:hover::after {
+  height: 75%;
+  opacity: 1;
+}
+
+.btn-1f:active::after {
+  height: 130%;
+  opacity: 1;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: black;
+  background-color: rgba(0, 0, 0, 0.4);
+  /* Modal Content/Box */
+  /* The Close Button */
+}
+
+.modal.show {
+  display: block;
+}
+
+.modal .modal-content {
+  background-color: #fefefe;
+  margin: 15% auto;
+  width: 80%;
+  /* Modal Body */
+  /* Modal Footer */
+  /* Modal Content */
+  /* Add Animation */
+}
+
+.modal .modal-content .modal-header {
+  padding: 2px 16px;
+  background-color: #121921;
+  color: white;
+}
+
+.modal .modal-content .modal-body {
+  background-color: #1b2331;
+  padding: 2px 16px;
+}
+
+.modal .modal-content .modal-footer {
+  padding: 2px 16px;
+  background-color: #1b2331;
+  color: white;
+}
+
+.modal .modal-content .modal-content {
+  position: relative;
+  background-color: #fefefe;
+  margin: auto;
+  padding: 0;
+  border: 1px solid #888;
+  width: 80%;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+  animation-name: animatetop;
+  animation-duration: 0.4s;
+}
+
+@keyframes animatetop {
+  from {
+    top: -300px;
+    opacity: 0;
+  }
+  to {
+    top: 0;
+    opacity: 1;
+  }
+}
+
+.modal .close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.modal .close:hover, .modal .close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.slider {
+  -webkit-appearance: none;
+  /* Override default CSS styles */
+  appearance: none;
+  width: 100%;
+  /* Full-width */
+  height: 25px;
+  /* Specified height */
+  background: #ffffff;
+  /* Grey background */
+  outline: none;
+  /* Remove outline */
+  opacity: 0.7;
+  /* Set transparency (for mouse-over effects on hover) */
+  -webkit-transition: .2s;
+  /* 0.2 seconds transition on hover */
+  transition: opacity .2s;
+  /* Mouse-over effects */
+  /* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */
+}
+
+.slider:hover {
+  opacity: 1;
+  /* Fully shown on mouse-over */
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  /* Override default look */
+  appearance: none;
+  width: 25px;
+  /* Set a specific slider handle width */
+  height: 25px;
+  /* Slider handle height */
+  background: #121921;
+  /* Green background */
+  cursor: pointer;
+  /* Cursor on hover */
+}
+
+.slider::-moz-range-thumb {
+  width: 25px;
+  /* Set a specific slider handle width */
+  height: 25px;
+  /* Slider handle height */
+  background: #121921;
+  /* Green background */
+  cursor: pointer;
+  /* Cursor on hover */
+}
+
+.highscores-container {
+  text-align: center;
+}
+
+#highscores {
+  list-style-type: none;
+}
+/*# sourceMappingURL=index.css.map */
