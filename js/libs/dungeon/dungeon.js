@@ -10,6 +10,7 @@ class DungeonTile {
 		this.hasLight = false;
 		this.lightLevel = 1;
 		this.isWall = false;
+		this.color;
 	}
 
 	get neighborPositions() {
@@ -113,11 +114,14 @@ class Dungeon {
 		this.hallways = [];
 		this.lightTiles = [];
 		this.wallTiles = [];
+
 		this.debug_info = {
 			connections: [],
 			triangles: [],
 			enable: false,
 		}
+
+		this.spawnTiles = [];
 
 		this.bounds;
 		this.grid; //= new Grid(this.width, this.height);
@@ -135,6 +139,8 @@ class Dungeon {
 			nextRoomId: 0,
 			nextHallwayId: 0
 		}
+
+
 	}
 
 	generate(minRoomSize, maxRoomSize, hallwaySize) {
@@ -610,6 +616,16 @@ class Dungeon {
 				}
 			}
 		});
+	}
+
+	generateSpawnTiles(count){
+		for(let i = 0; i < count; i++) {
+			let randomRoomIndex = Math.floor(randomRange(0, this.mainRooms.length-1));
+			let randomRoom = this.mainRooms[randomRoomIndex];
+			let center = randomRoom.gridRect.center.copy();
+			this.spawnTiles.push(this.grid.getTile(Math.floor(center.x), Math.floor(center.y)));
+		}
+		return this.spawnTiles;
 	}
 
 }

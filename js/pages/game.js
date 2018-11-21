@@ -16,6 +16,31 @@ function findGetParameter(parameterName) {
 function setup() {
     //p5js setup
     start();
+
+    // add a random highscore -----------------------------------------------------------------------
+
+}
+
+function sendRandomHighscore(){
+    let playerName = faker.internet.userName();
+    playerName.substr(0, 3);
+    let score = Math.random() * 999999;
+    $.ajax({
+        url: "https://snakignarround.000webhostapp.com/webservice/service.php",
+        type: "post",
+        data: {
+            action: 'submit_score',
+            name: playerName,
+            score: score,
+        },
+        success: function (response) {
+            //window.location.replace('index.html');
+            console.log(response)
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.log(textStatus, errorThrown);
+        }
+    });
 }
 
 function start(){
@@ -64,6 +89,15 @@ function start(){
     snakeGame.onGamePaused(function () {
         console.log('callback overriden');
     });
+
+    snakeGame.onGameEndCallback = function (game, winner) {
+        gameOver(winner);
+    };
+
+    function gameOver(winner){
+        sendRandomHighscore();
+        window.location.replace('../index.html');
+    }
 
     snakeGame.run();
 }

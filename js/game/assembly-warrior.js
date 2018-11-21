@@ -1,6 +1,6 @@
 class Game{
     constructor(players){
-        this.viewport = new Viewport(window.innerWidth, window.innerHeight, 'ORTHO', 40);
+        this.viewport = new Viewport(window.innerWidth, window.innerHeight, 'PERSPECTIVE', 40);
 
         this.renderer = new THREE.WebGLRenderer( {alpha: true} );
         this.renderer.setClearColor(0x000000, 1);
@@ -28,8 +28,8 @@ class Game{
         this.grid = new Grid(1, 31);
 
         this.camera.position.copy(this.grid.gridHelper.position);
-        this.camera.position.add(new THREE.Vector3(20, 20, 20));
-        this.camera.lookAt(this.grid.gridHelper.position);
+        this.camera.position.add(new THREE.Vector3(100, 100, 100));
+        this.camera.lookAt(new THREE.Vector3(0, 0, 0));//this.grid.gridHelper.position);
         
         this.keyboard = new Keyboard();
         this.amountPlayers = players;
@@ -56,8 +56,69 @@ class Game{
         this.glitchPass.renderToScreen = true;
         //this.glitchPass.goWild = true;
         this.composer.addPass( this.glitchPass );
-        this.useComposer = false;
-        this.composerTimer = 0;
+        this.useComposer = true;
+		this.composerTimer = 0;
+		
+
+
+
+		// CANNON JS
+
+		this.world = new CANNON.World();
+		this.world.gravity.set(0, -9.82, 0); // m/s²
+
+		this.fixedTimeStep = 1.0 / 60.0; // seconds
+		this.maxSubSteps = 3;
+
+        this.world.quatNormalizeSkip = 0;
+        this.world.quatNormalizeFast = false;
+        this.world.defaultContactMaterial.contactEquationStiffness = 1e7;
+        this.world.defaultContactMaterial.contactEquationRelaxation = 4;
+        this.world.gravity.set(0, -9.82, 0);
+        this.world.solver.iterations = 20;
+        this.world.solver.tolerance = 0.0;
+    
+        this.physicsMaterials = {
+            ground: new CANNON.Material("groundMaterial"),
+            wall: new CANNON.Material("wallMaterial"),
+            player: new CANNON.Material("playerMaterial"),
+        }
+        this.contactMaterials = {
+            ground_player: new CANNON.ContactMaterial(this.physicsMaterials.ground, this.physicsMaterials.player, {
+                friction: 100.0,
+                restitution: 0.0,
+                contactEquationRelaxation: 10.0,
+                frictionEquationStiffness: 10
+            }),
+            wall_player: new CANNON.ContactMaterial(this.physicsMaterials.wall, this.physicsMaterials.player, {
+                friction: 10.0,
+                restitution: 0.0,
+                contactEquationRelaxation: 10.0,
+                frictionEquationStiffness: 1
+            }),
+        }
+        this.world.addContactMaterial(this.contactMaterials.ground_player);
+        this.world.addContactMaterial(this.contactMaterials.wall_player);
+
+
+        // AUDIO
+
+        // create an AudioListener and add it to the camera
+        var listener = new THREE.AudioListener();
+        this.camera.add( listener );
+
+        // create a global audio source
+        var sound = new THREE.Audio( listener );
+
+        // load a sound and set it as the Audio object's buffer
+        var audioLoader = new THREE.AudioLoader();
+        audioLoader.load( '../assets/songs/Diablo-2-rogue.ogg', function( buffer ) {
+            sound.setBuffer( buffer );
+            sound.setLoop( true );
+            sound.setVolume( 0.2 );
+            sound.play();
+        });
+
     }
 
     allObjectsLoaded(){
@@ -90,110 +151,18 @@ class Game{
 
     start(){
         let self = this;
-		/*
-		this.models = {
-            players: 
-            [
-                new AsyncMesh('../assets/', 'gallina2', true),
-                new AsyncMesh('../assets/', 'buho', true),
-                new AsyncMesh('../assets/', 'pato', true),
-                new AsyncMesh('../assets/', 'gallinita', true),
-                new AsyncMesh('../assets/', 'gallina3', true),
-            ],
-            manzana: new AsyncMesh('../assets/', 'manzana', true),
-            jardin1: new AsyncMesh('../assets/', 'jardin1', true),
-		};
 		
-        this.models.jardin1.subscribe((asyncMesh) => {
-			let object = asyncMesh.getClone();
-            object.position.copy(self.grid.center());
-            object.position.x += self.grid.cellSize * 0.5;
-            object.position.z += self.grid.cellSize * 0.5;
-            object.position.y -= 31;
-            this.scene.add(object);
-		});//this, '_addBackground');
-
-		*/
+		this.models = {
+			player: new AsyncMesh('../assets/warriors/', 'general_posed', false),
+			enemy: new AsyncMesh('../assets/warriors/', 'gladiator_posed', false)
+		};
 
         this.lights = [
             new THREE.AmbientLight(0xffffff, 0.2),
-            new THREE.DirectionalLight(0xffffff, 1.0),
-            //new THREE.DirectionalLight(0xff0000, 1.0),
-            //new THREE.DirectionalLight(0x00ff00, 1.0),
-            //new THREE.DirectionalLight(0x0000ff, 1.0),
-        ];
-        this.lights[1].position.set(1, 0.8, 0.5);
-        //this.lights[1].position.set(1, 0, 0)
-        //this.lights[2].position.set(0, 1, 0)
-        //this.lights[3].position.set(0, 0, 1)
-
-		/*
-
-        let playerGeometry = new THREE.BoxGeometry(1, 1, 1);
-        let playerMaterial = new THREE.MeshLambertMaterial({ color: new THREE.Color(0xffffff) });
-        let playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
-
-        let playerColors = [
-            new THREE.Color(0xffffff),
-            new THREE.Color(0x8e7865),
-            new THREE.Color(0xb6c16e),
-            new THREE.Color(0xffffff),
+            //new THREE.DirectionalLight(0xffffff, 1.0),
         ];
 
-        for(let i = 0; i < this.amountPlayers; i++){
-            this.players.push(new Snake(this.scene, this.grid, {
-                playerId: i,    
-                position: this.grid.randomPosition(),
-                length: 4,
-                tick: 0.1,
-                //geometry: playerGeometry,
-                //material: playerMaterial,
-                headMesh: this.models.players[i],
-                //bodyMesh: playerMesh.clone(),
-                bodyColor: playerColors[i],
-            }));
-        }
-
-		*/
-
-        //TODO: Create a configuration file to store the inputmappings of every player.
-        this.playerControllers.push( new InputMapping(this.keyboard, {
-            'Left': 'A',
-            'Right': 'D',
-            'Grow': 'shift + R',
-            'Jump': 'space bar'
-        }));
-
-        this.playerControllers.push(new InputMapping(this.keyboard, {
-            'Left': 'left',
-            'Right': 'right',
-            'Grow': 'shift + l',
-            'Jump': 'numpad 0'
-        }));
-
-		
-
-        /*let sphereGeo = new THREE.SphereGeometry(0.5, 4, 2);
-        let sphereMaterial = new THREE.MeshPhongMaterial({
-            color: new THREE.Color(0xFFFFFF)
-		});*/
-		/*
-        for(let i = 0; i < this.players.length; i++){
-            //let f = new THREE.Mesh(sphereGeo, sphereMaterial)
-            //f.position.copy(this.grid.randomPosition());
-            //this.food.push(f);
-            //this.scene.add(f);
-            let position = this.grid.randomPosition();
-            let f = new Food(this.scene, this.models.manzana, position);
-            this.food.push(f);
-        }
-		*/
-
-        for (let light of this.lights) {
-            this.scene.add(light);
-        }
-
-        
+        //this.lights[1].position.set(1, 0.8, 0.5);        
 
         /*let axesHelper = new THREE.AxesHelper(5);
 		this.scene.add(axesHelper);*/
@@ -214,6 +183,36 @@ class Game{
 		//defaultMesh.position.set(0, 0, 0);
 		//this.scene.add(defaultMesh);
 
+		this.lamps = [];
+
+		let sphereGeo = new THREE.SphereGeometry(0.3, 6, 6);
+        let sphereMaterial = new THREE.MeshBasicMaterial({
+            color: new THREE.Color(0xf48042)
+		});
+
+        let addKinematicObject = (mesh) => {
+            let box = new THREE.Box3().setFromObject(mesh);
+            let boundinBox = new CANNON.Box(new CANNON.Vec3(
+                (box.max.x - box.min.x) / 2,
+                (box.max.y - box.min.y) / 2,
+                (box.max.z - box.min.z) / 2
+            ));
+            let body = new CANNON.Body({mass: 0, material: this.physicsMaterials.wall});
+            body.addShape(boundinBox);
+            body.position.copy(mesh.position);
+            body.computeAABB();
+            //body.type = CANNON.Body.STATIC;
+            //body.collisionResponse = false;
+
+            body.mesh = mesh;
+            
+            this.world.addBody(body);
+            let helper = new THREE.BoxHelper(mesh, 0xff0000);
+            helper.update();
+            //this.scene.add(helper);
+            body.helper = helper;
+        }
+
 		for(let tile of this.dungeon.grid.tiles) {
 			if(tile != 0){
 				let p5color;// = room.color;
@@ -231,19 +230,97 @@ class Game{
 				m.material.color = new THREE.Color(`hsl(${p5color.levels[0]},${p5color.levels[1]}%, ${Math.floor(tile.lightLevel * LIGHT_LEVELS)}%)`); 
 				let height = 0;
 				if(tile.isWall){
-					height = 1;
+					for(let i = 0; i < 3; i++) {
+						let walldown = m.clone(); 
+						walldown.position.copy(new THREE.Vector3(tile.pos.x, height + i, tile.pos.y));
+                        this.scene.add(walldown);
+                        if(i == 1)
+                            addKinematicObject(walldown);
+					}
 				}
-				if(tile.hasLight){
+				else if(tile.hasLight){
 					let light = new THREE.PointLight( 0xffffff, 5, 3 );
-					light.position.set( tile.pos.x, 1, tile.pos.y );
-					this.scene.add( light );
+					light.position.set( tile.pos.x, height + 2, tile.pos.y );
+					m.position.copy(new THREE.Vector3(tile.pos.x, height, tile.pos.y));
+					this.lights.push(light);
+					let lamp = new THREE.Mesh(sphereGeo, sphereMaterial);//m.material.clone());
+					lamp.position.copy(m.position);
+					lamp.position.y = height + 2;
+					this.lamps.push({mesh: lamp, lightIndex: this.lights.length - 1});
+
+					//this.scene.add( light );
+					this.scene.add(m);
+					this.scene.add(lamp);
 				}
-				m.position.copy(new THREE.Vector3(tile.pos.x, height, tile.pos.y));
-				this.scene.add(m);
+				else {
+					m.position.copy(new THREE.Vector3(tile.pos.x, height, tile.pos.y));
+					this.scene.add(m);
+				}
+				
 			}
 		}
 
-        this.scene.add(this.grid.gridHelper);
+        this.dungeon.generateSpawnTiles(1);
+
+        //this.scene.add(this.grid.gridHelper);
+        
+		for(let model in this.models){
+			this.models[model].load();
+		}
+
+		this.lightColors = [
+			new THREE.Color(0xc41f1f),
+			new THREE.Color(0xffee02),
+		]
+		this.lightColorIndex = 0;
+		this.lightColorProgress = 0;
+
+
+
+        
+        //TODO: Create a configuration file to store the inputmappings of every player.
+        this.playerControllers.push( new InputMapping(this.keyboard, {
+            'Left': 'A',
+            'Right': 'D',
+            'Forward': 'W',
+            'Back': 'S'
+        }));
+
+        this.playerControllers.push(new InputMapping(this.keyboard, {
+            'Left': 'left',
+            'Right': 'right',
+			'Forward': 'up',
+            'Back': 'down'
+        }));
+
+		
+        for(let i = 0; i < this.amountPlayers; i++){
+            let player = new Player(this.scene, this.world, {
+				playerId: i,
+                asyncMesh: this.models.player,
+                physicsMaterial: this.physicsMaterials.player
+            });
+            this.players.push(player);
+            let spawnIndex = i > this.dungeon.spawnTiles.length - 1 ? this.dungeon.spawnTiles.length - 1 : i;
+            player.mesh.position.set(this.dungeon.spawnTiles[spawnIndex].pos.x, 1, this.dungeon.spawnTiles[spawnIndex].pos.y);
+        }
+
+
+        for (let light of this.lights) {
+            this.scene.add(light);
+        }
+
+		// Create a plane
+		var groundBody = new CANNON.Body({
+            mass: 0, // mass == 0 makes the body static
+            material: this.physicsMaterials.ground
+		});
+		var groundShape = new CANNON.Plane();
+		groundBody.addShape(groundShape);
+		var rot = new CANNON.Vec3(1,0,0)
+		groundBody.quaternion.setFromAxisAngle(rot, -Math.PI / 2)
+		groundBody.position.set(0,0,0);
+		this.world.addBody(groundBody);
     }
 
 
@@ -263,37 +340,56 @@ class Game{
     }
     
     update( time ){
+
+		this.world.step(this.fixedTimeStep, time.deltaTime, this.maxSubSteps);
+
+        /*for(let body of this.world.bodies){
+            if(body.mesh){
+                body.mesh.position.copy(body.position);
+                if(body.helper)
+                    body.helper.update();
+            }
+        }*/
+
         if(this.composerTimer >= 2){
             this.useComposer = false;
         }else{
             this.composerTimer += time.deltaTime;
         }
+		this.lamps[0].mesh.material.color.lerp(this.lightColors[this.lightColorIndex], time.deltaTime);
+		this.lightColorProgress += time.deltaTime;
+		if(this.lightColorProgress >= 1) {
+			this.lightColorIndex = this.lightColorIndex == 0 ? 1 : 0;
+			this.lightColorProgress = 0;
+		}
 
-        for(let f of this.food){
-            f.update( time );
-        }
+		for(let lamp of this.lamps){
+			lamp.mesh.position.y = Math.sin(time.elapsed * 5) * 0.2 + 2;
+			this.lights[lamp.lightIndex].position.copy(lamp.mesh.position);
+			this.lights[lamp.lightIndex].color = this.lamps[0].mesh.material.color;
+		}
 
         for (let player of this.players) {
-
-            for (let f of this.food){
-                let foodInGrid = this.grid.worldToGrid(f.position);
-                if (player.eat(foodInGrid)) {
-                    let score = f.points + ((Math.random() - 0.5) * 2) * 5;
-                    score = Math.floor(score);
-                    player.addScore( score );
-                    f.gotEaten();
-                    f.position.copy(this.grid.randomPosition());
-
-                }
-            }
-            
             player.update(time);
-            for(let second of this.players){
-                if(player.intersects(second)){
-                    this.useComposer = true;
-                    this.composerTimer = 0;
-                    player.alive = false;
-                    console.log(player.playerId);
+        }
+
+        this.camera.position.set(this.players[0].mesh.position.x + 20, this.players[0].mesh.position.y + 20, this.players[0].mesh.position.z + 20);
+        
+        if(!this.winner){
+            for(let player of this.players) {
+                if(player.hp <= 0) {
+                    if(this.players.length > 1){
+                        for(let other of this.players) {
+                            if(other.hp > 0) {
+                                this.winner = other;
+                                this.onGameEnd();
+                            }
+                        }
+                    }
+                    else{
+                        this.winner = player;
+                        this.onGameEnd();
+                    }
                 }
             }
         }
@@ -341,7 +437,7 @@ class Game{
 
     onGameEnd(callback){
         if(callback){
-            this.onPauseCallback = callback;
+            this.onGameEndCallback = callback;
         }else{
             this.onGameEndCallback(this, 0);
         }
