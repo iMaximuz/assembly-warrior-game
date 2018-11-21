@@ -35,9 +35,12 @@ class AsyncMesh{
         }
         */
        this.onLoadCallbacks.push(callback);
+       if(this.loaded){
+           callback(this);
+       }
     }
 
-    load() {
+    async load() {
         let self = this; 
 
         let loadOBJWithMTL = function(path, objFile, mtlFile, onLoadCallback) {

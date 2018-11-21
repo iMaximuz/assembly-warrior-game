@@ -119,6 +119,8 @@ class Game{
             sound.play();
         });
 
+        let debug_mode = false;
+
     }
 
     allObjectsLoaded(){
@@ -143,7 +145,7 @@ class Game{
 
     gameLoop( time ){
         this.input();
-        if(!this.paused){
+        if(!this.paused) {
             this.update( time );
         }
         this.render();
@@ -190,8 +192,9 @@ class Game{
             color: new THREE.Color(0xf48042)
 		});
 
-        let addKinematicObject = (mesh) => {
-            let box = new THREE.Box3().setFromObject(mesh);
+        let addKinematicObject = (geometry, position) => {
+            geometry.computeBoundingBox();
+            let box = geometry.boundingBox;
             let boundinBox = new CANNON.Box(new CANNON.Vec3(
                 (box.max.x - box.min.x) / 2,
                 (box.max.y - box.min.y) / 2,
@@ -199,66 +202,107 @@ class Game{
             ));
             let body = new CANNON.Body({mass: 0, material: this.physicsMaterials.wall});
             body.addShape(boundinBox);
-            body.position.copy(mesh.position);
+            body.position.copy(position);
             body.computeAABB();
-            //body.type = CANNON.Body.STATIC;
+            body.type = CANNON.Body.STATIC;
             //body.collisionResponse = false;
 
-            body.mesh = mesh;
+            //body.mesh = mesh;
             
             this.world.addBody(body);
-            let helper = new THREE.BoxHelper(mesh, 0xff0000);
-            helper.update();
+            //let helper = new THREE.BoxHelper(mesh, 0xff0000);
+            //helper.update();
             //this.scene.add(helper);
-            body.helper = helper;
+            //body.helper = helper;
         }
 
-		for(let tile of this.dungeon.grid.tiles) {
-			if(tile != 0){
-				let p5color;// = room.color;
-				if(tile.isRoom) {
-					let room = this.dungeon.rooms[tile.index];
-					p5color = room.color;
-				}
-				else {
-					let hallway = this.dungeon.hallways[tile.index];
-					p5color = hallway.color;
-				}
 
-				let m = defaultMesh.clone();
-				m.material = material.clone();
-				m.material.color = new THREE.Color(`hsl(${p5color.levels[0]},${p5color.levels[1]}%, ${Math.floor(tile.lightLevel * LIGHT_LEVELS)}%)`); 
-				let height = 0;
-				if(tile.isWall){
-					for(let i = 0; i < 3; i++) {
-						let walldown = m.clone(); 
-						walldown.position.copy(new THREE.Vector3(tile.pos.x, height + i, tile.pos.y));
-                        this.scene.add(walldown);
-                        if(i == 1)
-                            addKinematicObject(walldown);
-					}
-				}
-				else if(tile.hasLight){
-					let light = new THREE.PointLight( 0xffffff, 5, 3 );
-					light.position.set( tile.pos.x, height + 2, tile.pos.y );
-					m.position.copy(new THREE.Vector3(tile.pos.x, height, tile.pos.y));
-					this.lights.push(light);
-					let lamp = new THREE.Mesh(sphereGeo, sphereMaterial);//m.material.clone());
-					lamp.position.copy(m.position);
-					lamp.position.y = height + 2;
-					this.lamps.push({mesh: lamp, lightIndex: this.lights.length - 1});
+        this.dungeonSortedTiles = {rooms: {}, hallways: {}};
 
-					//this.scene.add( light );
-					this.scene.add(m);
-					this.scene.add(lamp);
-				}
-				else {
-					m.position.copy(new THREE.Vector3(tile.pos.x, height, tile.pos.y));
-					this.scene.add(m);
-				}
-				
-			}
-		}
+        for(let tile of this.dungeon.grid.tiles) {
+			if(tile != 0) {
+                if(tile.isRoom){
+                    if(!this.dungeonSortedTiles.rooms[tile.index]) this.dungeonSortedTiles.rooms[tile.index] = {lightLevels: {}};
+                    if(!this.dungeonSortedTiles.rooms[tile.index].lightLevels[tile.lightLevel]) this.dungeonSortedTiles.rooms[tile.index].lightLevels[tile.lightLevel] = [];
+                    this.dungeonSortedTiles.rooms[tile.index].lightLevels[tile.lightLevel].push(tile);
+                }else{
+                    if(!this.dungeonSortedTiles.hallways[tile.index]) this.dungeonSortedTiles.hallways[tile.index] = {lightLevels: {}};
+                    if(!this.dungeonSortedTiles.hallways[tile.index].lightLevels[tile.lightLevel]) this.dungeonSortedTiles.hallways[tile.index].lightLevels[tile.lightLevel] = [];
+                    this.dungeonSortedTiles.hallways[tile.index].lightLevels[tile.lightLevel].push(tile);
+                }
+            }
+        }
+
+        //let m = defaultMesh.clone();
+        
+
+        this.mergedMeshes = {rooms: {}, hallways: {}};
+
+
+
+        let mergeGeometries = (sortedTiles, dungeonEntities) => {
+            let result = {
+                sortedMeshes: {},
+                lightsGeometry: new THREE.Geometry()
+            }
+            for(let entityId in sortedTiles) {
+                result.sortedMeshes[entityId] = {};
+                let roomTiles = sortedTiles[entityId];
+                for(let lightLevel in roomTiles.lightLevels) {
+                    let mergedGeometry = new THREE.Geometry();
+                    let tiles = roomTiles.lightLevels[lightLevel];
+                    let lightLevelMaterial = material.clone();
+    
+                    let p5color = dungeonEntities[entityId].color;
+                    lightLevelMaterial.color = new THREE.Color(`hsl(${p5color.levels[0]},${p5color.levels[1]}%, ${Math.floor(lightLevel * LIGHTNESS_STEP)}%)`); 
+    
+                    for(let tile of tiles) {
+                        let height = 0;
+    
+                        if(tile.isWall) {
+                            for(let i = 0; i < 3; i++) {
+                                geometry.translate(tile.pos.x, height + i, tile.pos.y);
+                                mergedGeometry.merge(geometry);
+                                if(i == 1)
+                                    addKinematicObject(geometry, new THREE.Vector3(tile.pos.x, height + i, tile.pos.y));
+                                geometry.translate(-tile.pos.x, -(height + i), -tile.pos.y);
+                            }
+                        }
+                        else {
+                            if(tile.hasLight) {
+                                let light = new THREE.PointLight( 0xffffff, 5, 3 );
+                                light.position.set( tile.pos.x, height + 2, tile.pos.y );
+                                this.lights.push(light);
+                                this.lamps.push(light);
+    
+                                sphereGeo.translate(tile.pos.x, height + 2, tile.pos.y);
+                                result.lightsGeometry.merge(sphereGeo);
+                                sphereGeo.translate(-tile.pos.x, -(height + 2), -tile.pos.y);
+                            }
+                            geometry.translate(tile.pos.x, height, tile.pos.y);
+                            mergedGeometry.merge(geometry);
+                            geometry.translate(-tile.pos.x, -height, -tile.pos.y);
+                        }
+                    }
+                    result.sortedMeshes[entityId][lightLevel] = new THREE.Mesh(mergedGeometry, lightLevelMaterial);
+                    this.scene.add(result.sortedMeshes[entityId][lightLevel]);
+                }
+            }
+            return result;
+        }
+
+        let roomsResult = mergeGeometries(this.dungeonSortedTiles.rooms, this.dungeon.rooms);
+        this.mergedMeshes.rooms = roomsResult.sortedMeshes;
+        let hallwaysResult = mergeGeometries(this.dungeonSortedTiles.hallways, this.dungeon.hallways);
+        this.mergedMeshes.rooms = hallwaysResult.sortedMeshes;
+
+
+        let lightsGeometry = new THREE.Geometry();
+        lightsGeometry.merge(roomsResult.lightsGeometry);
+        lightsGeometry.merge(hallwaysResult.lightsGeometry);
+
+        this.lightsMesh = new THREE.Mesh(lightsGeometry, sphereMaterial);
+        this.scene.add(this.lightsMesh);
 
         this.dungeon.generateSpawnTiles(1);
 
@@ -337,37 +381,57 @@ class Game{
                 this.unpause();
             this.keyboard.pressed('esc', false);
         }
+        if(this.keyboard.pressed('t')) {
+            this.debug_mode = !this.debug_mode;
+            if(this.debug_mode){
+                for(let body of this.world.bodies){
+                    this.scene.add(body.helper);
+                }
+            }
+            else{
+                for(let body of this.world.bodies){
+                    this.scene.remove(body.helper);
+                }
+            }
+            this.keyboard.pressed('t', false);
+        }
     }
     
     update( time ){
 
 		this.world.step(this.fixedTimeStep, time.deltaTime, this.maxSubSteps);
 
-        /*for(let body of this.world.bodies){
-            if(body.mesh){
-                body.mesh.position.copy(body.position);
-                if(body.helper)
-                    body.helper.update();
+        if(this.debug_mode){
+            for(let body of this.world.bodies){
+                if(body.mesh){
+                    body.mesh.position.copy(body.position);
+                    if(body.helper)
+                        body.helper.update();
+                }
             }
-        }*/
+        }
 
         if(this.composerTimer >= 2){
             this.useComposer = false;
         }else{
             this.composerTimer += time.deltaTime;
         }
-		this.lamps[0].mesh.material.color.lerp(this.lightColors[this.lightColorIndex], time.deltaTime);
+        this.lightsMesh.material.color.lerp(this.lightColors[this.lightColorIndex], time.deltaTime);
+		//this.lamps[0].mesh.material.color.lerp(this.lightColors[this.lightColorIndex], time.deltaTime);
 		this.lightColorProgress += time.deltaTime;
 		if(this.lightColorProgress >= 1) {
 			this.lightColorIndex = this.lightColorIndex == 0 ? 1 : 0;
 			this.lightColorProgress = 0;
 		}
 
+        this.lightsMesh.material.color.lerp(this.lightColors[this.lightColorIndex], time.deltaTime);
+        this.lightsMesh.position.y = Math.sin(time.elapsed * 5) * 0.2;
+        //this.lights[lamp.lightIndex].position.copy(lamp.mesh.position);
+
 		for(let lamp of this.lamps){
-			lamp.mesh.position.y = Math.sin(time.elapsed * 5) * 0.2 + 2;
-			this.lights[lamp.lightIndex].position.copy(lamp.mesh.position);
-			this.lights[lamp.lightIndex].color = this.lamps[0].mesh.material.color;
-		}
+			lamp.position.y = this.lightsMesh.position.y + 2;
+			lamp.color = this.lightsMesh.material.color;
+        }
 
         for (let player of this.players) {
             player.update(time);
